@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dashboard</title>
+  <title>My Dashboard</title>
 
   <style>
     body {
@@ -39,7 +39,7 @@
       font-size: 11px;
       color: #64748b;
     }
-    .time {
+    .value {
       font-size: 28px;
       font-weight: 700;
       margin-top: 8px;
@@ -49,16 +49,21 @@
 
 <body>
   <header>My Dashboard</header>
+
+  <!-- CLOCKS -->
   <div class="grid" id="clocks"></div>
-<div class="grid">
-  <div class="card">
-    <div class="city">Bitcoin</div>
-    <div class="tz">BTC / USD (Coinbase spot)</div>
-    <div class="time" id="btc">—</div>
+
+  <!-- BITCOIN -->
+  <div class="grid">
+    <div class="card">
+      <div class="city">Bitcoin</div>
+      <div class="tz">BTC / USD (Coinbase)</div>
+      <div class="value" id="btc">Loading…</div>
+    </div>
   </div>
-</div>
 
   <script>
+    // ---------- CLOCKS ----------
     const CITIES = [
       { name: "GMT", tz: "Etc/GMT" },
       { name: "London", tz: "Europe/London" },
@@ -68,7 +73,7 @@
       { name: "Vladivostok", tz: "Asia/Vladivostok" }
     ];
 
-    function fmt(tz) {
+    function timeFmt(tz) {
       return new Intl.DateTimeFormat("en-GB", {
         timeZone: tz,
         hour: "2-digit",
@@ -78,38 +83,45 @@
       });
     }
 
-    const el = document.getElementById("clocks");
+    const clocksEl = document.getElementById("clocks");
 
-    function render() {
-      el.innerHTML = "";
+    function renderClocks() {
+      clocksEl.innerHTML = "";
       const now = new Date();
       for (const c of CITIES) {
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `
           <div class="city">${c.name}</div>
           <div class="tz">${c.tz}</div>
-          <div class="time">${fmt(c.tz).format(now)}</div>
+          <div class="value">${timeFmt(c.tz).format(now)}</div>
         `;
-        el.appendChild(card);
+        clocksEl.appendChild(div);
       }
     }
 
-    render();
-    setInterval(render, 1000);
+    renderClocks();
+    setInterval(renderClocks, 1000);
+
+    // ---------- BITCOIN ----------
+    async function updateBTC() {
+      const el = document.getElementById("btc");
+      try {
+        const r = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", {
+          cache: "no-store"
+        });
+        const j = await r.json();
+        const price = Number(j.data.amount);
+        el.textContent = price.toLocaleString("en-GB", {
+          maximumFractionDigits: 2
+        });
+      } catch (e) {
+        el.textContent = "N/A";
+      }
+    }
+
+    updateBTC();
+    setInterval(updateBTC, 60 * 1000);
   </script>
-  <script>
-  async function updateBTC() {
-    const r = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { cache: "no-store" });
-    const j = await r.json();
-    const price = Number(j.data.amount);
-    document.getElementById("btc").textContent =
-      price.toLocaleString("en-GB", { maximumFractionDigits: 2 });
-  }
-
-  updateBTC();
-  setInterval(updateBTC, 60 * 1000);
-</script>
-
 </body>
 </html>
