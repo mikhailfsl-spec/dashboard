@@ -17,158 +17,150 @@
 </head>
 
 <body>
-  <header>My Dashboard</header>
+<header>My Dashboard</header>
 
-  <!-- PRICES -->
-  <div class="grid">
-    <div class="card">
-      <div class="title">Bitcoin</div>
-      <div class="subtitle">BTC / USD (Coinbase)</div>
-      <div class="value" id="btc">—</div>
-    </div>
-
-    <div class="card">
-      <div class="title">Gold</div>
-      <div class="subtitle">USD / oz (daily)</div>
-      <div class="value" id="gold">—</div>
-    </div>
-
-    <div class="card">
-      <div class="title">Brent</div>
-      <div class="subtitle" id="brentSub">BNO (Brent ETF proxy, ~delayed)</div>
-      <div class="value" id="brent">—</div>
-    </div>
-
-    <div class="card">
-      <div class="title">FX</div>
-      <div class="subtitle">GBP → USD</div>
-      <div class="value" id="fx">—</div>
-    </div>
+<!-- PRICES -->
+<div class="grid">
+  <div class="card">
+    <div class="title">Bitcoin</div>
+    <div class="subtitle">BTC / USD (Coinbase)</div>
+    <div class="value" id="btc">—</div>
   </div>
 
-  <!-- CLOCKS -->
-  <div class="grid" id="clocks"></div>
+  <div class="card">
+    <div class="title">Gold</div>
+    <div class="subtitle">USD / oz (daily)</div>
+    <div class="value" id="gold">—</div>
+  </div>
 
-  <script>
-    // ================= CLOCKS =================
-    const CITIES = [
-      { name: "GMT", tz: "Etc/GMT" },
-      { name: "London", tz: "Europe/London" },
-      { name: "Moscow", tz: "Europe/Moscow" },
-      { name: "Dubai", tz: "Asia/Dubai" },
-      { name: "Singapore", tz: "Asia/Singapore" },
-      { name: "Vladivostok", tz: "Asia/Vladivostok" }
-    ];
+  <div class="card">
+    <div class="title">Brent</div>
+    <div class="subtitle" id="brentSub">Estimated from BNO ETF</div>
+    <div class="value" id="brent">—</div>
+  </div>
 
-    function timeFmt(tz) {
-      return new Intl.DateTimeFormat("en-GB", {
-        timeZone: tz,
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false
-      });
+  <div class="card">
+    <div class="title">FX</div>
+    <div class="subtitle">GBP → USD</div>
+    <div class="value" id="fx">—</div>
+  </div>
+</div>
+
+<!-- CLOCKS -->
+<div class="grid" id="clocks"></div>
+
+<script>
+/* ================= CLOCKS ================= */
+const CITIES = [
+  { name: "GMT", tz: "Etc/GMT" },
+  { name: "London", tz: "Europe/London" },
+  { name: "Moscow", tz: "Europe/Moscow" },
+  { name: "Dubai", tz: "Asia/Dubai" },
+  { name: "Singapore", tz: "Asia/Singapore" },
+  { name: "Vladivostok", tz: "Asia/Vladivostok" }
+];
+
+function timeFmt(tz) {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: tz,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  });
+}
+
+const clocksEl = document.getElementById("clocks");
+
+function renderClocks() {
+  clocksEl.innerHTML = "";
+  const now = new Date();
+  for (const c of CITIES) {
+    const d = document.createElement("div");
+    d.className = "card";
+    d.innerHTML = `
+      <div class="title">${c.name}</div>
+      <div class="subtitle">${c.tz}</div>
+      <div class="value">${timeFmt(c.tz).format(now)}</div>
+    `;
+    clocksEl.appendChild(d);
+  }
+}
+
+renderClocks();
+setInterval(renderClocks, 1000);
+
+/* ================= HELPERS ================= */
+const n2 = (x) => Number(x).toLocaleString("en-GB", { maximumFractionDigits: 2 });
+const n4 = (x) => Number(x).toLocaleString("en-GB", { maximumFractionDigits: 4 });
+
+/* ================= BITCOIN (UNCHANGED) ================= */
+async function updateBTC() {
+  try {
+    const r = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { cache: "no-store" });
+    const j = await r.json();
+    document.getElementById("btc").textContent = j?.data?.amount ? n2(j.data.amount) : "N/A";
+  } catch {
+    document.getElementById("btc").textContent = "N/A";
+  }
+}
+
+/* ================= GOLD (UNCHANGED) ================= */
+async function updateGold() {
+  try {
+    const r = await fetch("https://freegoldapi.com/data/latest.json", { cache: "no-store" });
+    const j = await r.json();
+    const last = j?.[j.length - 1];
+    document.getElementById("gold").textContent = last?.price ? n2(last.price) : "N/A";
+  } catch {
+    document.getElementById("gold").textContent = "N/A";
+  }
+}
+
+/* ================= BRENT (ESTIMATED FROM ETF) ================= */
+const FINNHUB_KEY = "d6102i9r01qjrrugfd3gd6102i9r01qjrrugfd40";
+const BNO_TO_BRENT = 2.65; // adjustable multiplier
+
+async function updateBrent() {
+  const out = document.getElementById("brent");
+
+  try {
+    const url = "https://finnhub.io/api/v1/quote?symbol=BNO&token=" + FINNHUB_KEY;
+    const r = await fetch(url, { cache: "no-store" });
+    const j = await r.json();
+
+    if (typeof j.c === "number" && j.c > 0) {
+      const estimatedBrent = j.c * BNO_TO_BRENT;
+      out.textContent = n2(estimatedBrent);
+    } else {
+      out.textContent = "N/A";
     }
+  } catch {
+    out.textContent = "N/A";
+  }
+}
 
-    const clocksEl = document.getElementById("clocks");
+/* ================= FX (UNCHANGED) ================= */
+async function updateFX() {
+  try {
+    const r = await fetch("https://api.frankfurter.dev/v1/latest?from=GBP&to=USD", { cache: "no-store" });
+    const j = await r.json();
+    document.getElementById("fx").textContent = j?.rates?.USD ? n4(j.rates.USD) : "N/A";
+  } catch {
+    document.getElementById("fx").textContent = "N/A";
+  }
+}
 
-    function renderClocks() {
-      clocksEl.innerHTML = "";
-      const now = new Date();
-      for (const c of CITIES) {
-        const d = document.createElement("div");
-        d.className = "card";
-        d.innerHTML = `
-          <div class="title">${c.name}</div>
-          <div class="subtitle">${c.tz}</div>
-          <div class="value">${timeFmt(c.tz).format(now)}</div>
-        `;
-        clocksEl.appendChild(d);
-      }
-    }
+/* ================= REFRESH ================= */
+function refreshAll() {
+  updateBTC();
+  updateGold();
+  updateBrent();
+  updateFX();
+}
 
-    renderClocks();
-    setInterval(renderClocks, 1000);
-
-    // ================= HELPERS =================
-    const n2 = (x) => Number(x).toLocaleString("en-GB", { maximumFractionDigits: 2 });
-    const n4 = (x) => Number(x).toLocaleString("en-GB", { maximumFractionDigits: 4 });
-
-    // ================= BITCOIN (UNCHANGED) =================
-    async function updateBTC() {
-      try {
-        const r = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { cache: "no-store" });
-        const j = await r.json();
-        const amt = j?.data?.amount;
-        document.getElementById("btc").textContent = amt ? n2(amt) : "N/A";
-      } catch {
-        document.getElementById("btc").textContent = "N/A";
-      }
-    }
-
-    // ================= GOLD (UNCHANGED) =================
-    async function updateGold() {
-      try {
-        const r = await fetch("https://freegoldapi.com/data/latest.json", { cache: "no-store" });
-        const j = await r.json();
-        const last = j?.[j.length - 1];
-        document.getElementById("gold").textContent = (last && last.price) ? n2(last.price) : "N/A";
-      } catch {
-        document.getElementById("gold").textContent = "N/A";
-      }
-    }
-
-    // ================= BRENT (CHANGED: ETF proxy via Finnhub) =================
-    const FINNHUB_KEY = "d6102i9r01qjrrugfd3gd6102i9r01qjrrugfd40";
-    const BRENT_SYMBOL = "BNO"; // United States Brent Oil Fund ETF (proxy for Brent)
-
-    async function updateBrent() {
-      const out = document.getElementById("brent");
-      const sub = document.getElementById("brentSub");
-
-      try {
-        const url = "https://finnhub.io/api/v1/quote?symbol=" + encodeURIComponent(BRENT_SYMBOL) + "&token=" + FINNHUB_KEY;
-        const r = await fetch(url, { cache: "no-store" });
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        const j = await r.json();
-
-        // Finnhub quote: { c: current, d: change, dp: percent, h, l, o, pc, t }
-        const price = j?.c;
-        if (typeof price === "number" && price > 0) {
-          out.textContent = n2(price);
-          if (sub) sub.textContent = "BNO (Brent ETF proxy, ~delayed)";
-        } else {
-          out.textContent = "N/A";
-          if (sub) sub.textContent = "BNO (no quote returned)";
-        }
-      } catch {
-        out.textContent = "N/A";
-        if (sub) sub.textContent = "BNO (fetch failed)";
-      }
-    }
-
-    // ================= FX (UNCHANGED) =================
-    async function updateFX() {
-      try {
-        const r = await fetch("https://api.frankfurter.dev/v1/latest?from=GBP&to=USD", { cache: "no-store" });
-        const j = await r.json();
-        const rate = j?.rates?.USD;
-        document.getElementById("fx").textContent = rate ? n4(rate) : "N/A";
-      } catch {
-        document.getElementById("fx").textContent = "N/A";
-      }
-    }
-
-    // ================= REFRESH =================
-    function refreshAll() {
-      updateBTC();
-      updateGold();
-      updateBrent();
-      updateFX();
-    }
-
-    refreshAll();
-    setInterval(refreshAll, 60 * 1000);
-  </script>
+refreshAll();
+setInterval(refreshAll, 60 * 1000);
+</script>
 </body>
 </html>
