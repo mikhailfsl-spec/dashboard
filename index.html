@@ -1,261 +1,199 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
   <title>My Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
-    :root{
-      --bg:#0b0f14;
-      --card:#0f1622;
-      --card2:#0c121c;
-      --text:#e7edf6;
-      --muted:#a9b6c7;
-      --border:rgba(255,255,255,.08);
-      --shadow: 0 8px 30px rgba(0,0,0,.35);
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #0d1117, #020409);
+      color: #fff;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-      background: radial-gradient(1200px 700px at 30% 10%, #121a28 0%, var(--bg) 55%) fixed;
-      color:var(--text);
+
+    h1 {
+      padding: 20px;
+      font-size: 22px;
+      font-weight: 600;
     }
-    .wrap{max-width:1050px;margin:26px auto;padding:0 18px}
-    h1{font-size:22px;font-weight:700;margin:0 0 18px}
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap:14px;
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      padding: 20px;
     }
-    @media (max-width: 980px){
-      .grid{grid-template-columns: repeat(2, minmax(0, 1fr));}
+
+    .card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
     }
-    @media (max-width: 520px){
-      .grid{grid-template-columns: 1fr;}
+
+    .label {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-bottom: 6px;
     }
-    .card{
-      background: linear-gradient(180deg, var(--card) 0%, var(--card2) 100%);
-      border:1px solid var(--border);
-      border-radius:16px;
-      padding:16px 16px 14px;
-      box-shadow: var(--shadow);
-      min-height:110px;
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
+
+    .value {
+      font-size: 28px;
+      font-weight: 600;
     }
-    .label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-    .sub{font-size:12px;color:var(--muted);margin-top:4px}
-    .big{
-      font-size:40px;
-      line-height:1;
-      margin-top:10px;
-      font-weight:800;
-      letter-spacing:-.02em;
+
+    .unit {
+      font-size: 12px;
+      opacity: 0.6;
+      margin-left: 4px;
     }
-    .smallbig{
-      font-size:34px;
-      line-height:1;
-      margin-top:10px;
-      font-weight:800;
-      letter-spacing:-.02em;
-    }
-    .row2{grid-column: span 2;}
-    .row1{grid-column: span 1;}
-    .foot{margin-top:14px;color:var(--muted);font-size:12px}
-    .ok{color:#9be7b5}
-    .bad{color:#ffb4b4}
-    .pill{
-      display:inline-block;
-      padding:3px 10px;
-      border:1px solid var(--border);
-      border-radius:999px;
-      font-size:12px;
-      color:var(--muted);
-      margin-left:8px;
-      vertical-align:middle;
+
+    .updated {
+      padding: 0 20px 20px;
+      font-size: 12px;
+      opacity: 0.5;
     }
   </style>
 </head>
+
 <body>
-  <div class="wrap">
-    <h1>My Dashboard</h1>
 
-    <div class="grid">
-      <!-- BTC -->
-      <div class="card row2">
-        <div>
-          <div class="label">BITCOIN</div>
-          <div class="sub">BTC / USD (Coinbase)</div>
-        </div>
-        <div class="big" id="btc">—</div>
-      </div>
+  <h1>My Dashboard</h1>
 
-      <!-- GOLD -->
-      <div class="card row1">
-        <div>
-          <div class="label">GOLD</div>
-          <div class="sub">USD / oz (daily)</div>
-        </div>
-        <div class="smallbig" id="gold">—</div>
-      </div>
+  <div class="grid">
 
-      <!-- BRENT -->
-      <div class="card row1">
-        <div>
-          <div class="label">BRENT</div>
-          <div class="sub">USD / bbl (via Worker)</div>
-        </div>
-        <div class="smallbig" id="brent">—</div>
-      </div>
+    <div class="card">
+      <div class="label">BITCOIN</div>
+      <div class="value" id="btc">—</div>
+    </div>
 
-      <!-- FX -->
-      <div class="card row1">
-        <div>
-          <div class="label">FX</div>
-          <div class="sub">GBP → USD</div>
-        </div>
-        <div class="smallbig" id="fx">—</div>
-      </div>
+    <div class="card">
+      <div class="label">GOLD</div>
+      <div class="value">—</div>
+    </div>
 
-      <!-- Clocks -->
-      <div class="card row1">
-        <div>
-          <div class="label">GMT</div>
-          <div class="sub">Etc/GMT</div>
-        </div>
-        <div class="smallbig" id="t_gmt">—</div>
-      </div>
-
-      <div class="card row1">
-        <div>
-          <div class="label">LONDON</div>
-          <div class="sub">Europe/London</div>
-        </div>
-        <div class="smallbig" id="t_london">—</div>
-      </div>
-
-      <div class="card row1">
-        <div>
-          <div class="label">MOSCOW</div>
-          <div class="sub">Europe/Moscow</div>
-        </div>
-        <div class="smallbig" id="t_moscow">—</div>
-      </div>
-
-      <div class="card row1">
-        <div>
-          <div class="label">DUBAI</div>
-          <div class="sub">Asia/Dubai</div>
-        </div>
-        <div class="smallbig" id="t_dubai">—</div>
-      </div>
-
-      <div class="card row1">
-        <div>
-          <div class="label">SINGAPORE</div>
-          <div class="sub">Asia/Singapore</div>
-        </div>
-        <div class="smallbig" id="t_singapore">—</div>
-      </div>
-
-      <div class="card row1">
-        <div>
-          <div class="label">VLADIVOSTOK</div>
-          <div class="sub">Asia/Vladivostok</div>
-        </div>
-        <div class="smallbig" id="t_vladivostok">—</div>
+    <div class="card">
+      <div class="label">BRENT</div>
+      <div class="value">
+        <span id="brent">—</span>
+        <span class="unit">USD / bbl</span>
       </div>
     </div>
 
-    <div class="foot" id="status">Updated.</div>
+    <div class="card">
+      <div class="label">FX</div>
+      <div class="value">—</div>
+    </div>
+
+    <div class="card">
+      <div class="label">GMT</div>
+      <div class="value" id="gmt">—</div>
+    </div>
+
+    <div class="card">
+      <div class="label">LONDON</div>
+      <div class="value" id="london">—</div>
+    </div>
+
+    <div class="card">
+      <div class="label">MOSCOW</div>
+      <div class="value" id="moscow">—</div>
+    </div>
+
+    <div class="card">
+      <div class="label">DUBAI</div>
+      <div class="value" id="dubai">—</div>
+    </div>
+
+    <div class="card">
+      <div class="label">SINGAPORE</div>
+      <div class="value" id="singapore">—</div>
+    </div>
+
+    <div class="card">
+      <div class="label">VLADIVOSTOK</div>
+      <div class="value" id="vladivostok">—</div>
+    </div>
+
   </div>
 
+  <div class="updated" id="updated">Updated.</div>
+
 <script>
-  // ---------- helpers ----------
-  const $ = (id) => document.getElementById(id);
+/* ---------- HELPERS ---------- */
 
-  function fmtNumber(n, decimals=2){
-    if (n === null || n === undefined || Number.isNaN(n)) return "—";
-    return Number(n).toLocaleString(undefined, {minimumFractionDigits:decimals, maximumFractionDigits:decimals});
-  }
+function $(id){ return document.getElementById(id); }
 
-  async function safeFetchJson(url){
-    const r = await fetch(url, { cache: "no-store" });
-    const ct = r.headers.get("content-type") || "";
-    let body = null;
-    if (ct.includes("application/json")) body = await r.json();
-    else body = await r.text();
-    if (!r.ok) throw { status: r.status, body };
-    return body;
-  }
+function time(tz){
+  return new Date().toLocaleTimeString("en-GB", {
+    timeZone: tz,
+    hour12: false
+  });
+}
 
-  function setStatusOk(msg){
-    $("status").innerHTML = `<span class="ok">${msg}</span>`;
-  }
-  function setStatusBad(msg){
-    $("status").innerHTML = `<span class="bad">${msg}</span>`;
-  }
+/* ---------- CLOCKS ---------- */
 
-  // ---------- data updaters ----------
-  async function updateBTC(){
-    // Coinbase spot price (no auth)
-    const data = await safeFetchJson("https://api.coinbase.com/v2/prices/BTC-USD/spot");
-    const price = Number(data?.data?.amount);
-    $("btc").textContent = fmtNumber(price, 1);
-  }
+function updateClocks(){
+  $("gmt").textContent = time("Etc/GMT");
+  $("london").textContent = time("Europe/London");
+  $("moscow").textContent = time("Europe/Moscow");
+  $("dubai").textContent = time("Asia/Dubai");
+  $("singapore").textContent = time("Asia/Singapore");
+  $("vladivostok").textContent = time("Asia/Vladivostok");
+}
 
-  async function updateBrent(){
-    // IMPORTANT: via Pages Function -> Worker -> upstream
-    const data = await safeFetchJson("/api/brent");
-    // Your Worker returns: { brent: 67.18, symbol:"BZUSD", unit:"USD/bbl", ... }
-    $("brent").textContent = (data?.brent != null) ? fmtNumber(data.brent, 2) : "N/A";
-  }
+/* ---------- BRENT (Pages Function) ---------- */
 
-  // placeholders (you can wire later)
-  async function updateGold(){
-    $("gold").textContent = "—";
-  }
-  async function updateFX(){
-    $("fx").textContent = "—";
-  }
+async function updateBrent(){
+  try {
+    const r = await fetch("/api/brent", { cache: "no-store" });
+    if (!r.ok) throw new Error("fetch failed");
+    const data = await r.json();
 
-  function timeInTZ(tz){
-    return new Intl.DateTimeFormat(undefined, {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-      timeZone: tz
-    }).format(new Date());
+    // expects { brent: number }
+    $("brent").textContent =
+      data.brent != null ? data.brent.toFixed(2) : "N/A";
+  } catch {
+    $("brent").textContent = "N/A";
   }
+}
 
-  function updateClocks(){
-    $("t_gmt").textContent = timeInTZ("Etc/GMT");
-    $("t_london").textContent = timeInTZ("Europe/London");
-    $("t_moscow").textContent = timeInTZ("Europe/Moscow");
-    $("t_dubai").textContent = timeInTZ("Asia/Dubai");
-    $("t_singapore").textContent = timeInTZ("Asia/Singapore");
-    $("t_vladivostok").textContent = timeInTZ("Asia/Vladivostok");
+/* ---------- BTC (Coinbase) ---------- */
+
+async function updateBTC(){
+  try {
+    const r = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot");
+    const data = await r.json();
+    $("btc").textContent =
+      Number(data.data.amount).toLocaleString("en-US", {
+        maximumFractionDigits: 1
+      });
+  } catch {
+    $("btc").textContent = "—";
   }
+}
 
-  async function refreshAll(){
-    try{
-      await Promise.allSettled([updateBTC(), updateGold(), updateBrent(), updateFX()]);
-      setStatusOk("Updated.");
-    }catch(e){
-      setStatusBad("Update failed.");
-    }
-  }
+/* ---------- REFRESH ---------- */
 
-  // initial
+async function refreshAll(){
   updateClocks();
-  refreshAll();
+  await Promise.allSettled([
+    updateBTC(),
+    updateBrent()
+  ]);
+  $("updated").textContent =
+    "Updated at " + new Date().toLocaleTimeString("en-GB");
+}
 
-  // intervals
-  setInterval(updateClocks, 1000);
-  setInterval(refreshAll, 60_000);
+/* ---------- START ---------- */
+
+refreshAll();
+setInterval(updateClocks, 1000);
+setInterval(refreshAll, 60_000);
 </script>
+
 </body>
 </html>
