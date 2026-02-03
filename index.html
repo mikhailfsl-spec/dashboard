@@ -6,45 +6,13 @@
   <title>My Dashboard</title>
 
   <style>
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background: #0b0f17;
-      color: #e5e7eb;
-    }
-    header {
-      padding: 16px;
-      font-size: 18px;
-      font-weight: 600;
-      border-bottom: 1px solid #1f2937;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-      padding: 16px;
-    }
-    .card {
-      background: #111827;
-      border: 1px solid #1f2937;
-      border-radius: 14px;
-      padding: 14px;
-    }
-    .title {
-      font-size: 12px;
-      color: #94a3b8;
-      text-transform: uppercase;
-    }
-    .subtitle {
-      font-size: 11px;
-      color: #64748b;
-    }
-    .value {
-      font-size: 28px;
-      font-weight: 700;
-      margin-top: 8px;
-      white-space: nowrap;
-    }
+    body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:#0b0f17; color:#e5e7eb; }
+    header { padding:16px; font-size:18px; font-weight:600; border-bottom:1px solid #1f2937; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; padding:16px; }
+    .card { background:#111827; border:1px solid #1f2937; border-radius:14px; padding:14px; }
+    .title { font-size:12px; color:#94a3b8; text-transform:uppercase; }
+    .subtitle { font-size:11px; color:#64748b; }
+    .value { font-size:28px; font-weight:700; margin-top:8px; white-space:nowrap; }
   </style>
 </head>
 
@@ -67,7 +35,7 @@
 
     <div class="card">
       <div class="title">Brent</div>
-      <div class="subtitle">USD / bbl (near-live)</div>
+      <div class="subtitle" id="brentSub">USD / bbl (near-live)</div>
       <div class="value" id="brent">—</div>
     </div>
 
@@ -94,16 +62,11 @@
 
     function timeFmt(tz) {
       return new Intl.DateTimeFormat("en-GB", {
-        timeZone: tz,
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false
+        timeZone: tz, hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false
       });
     }
 
     const clocksEl = document.getElementById("clocks");
-
     function renderClocks() {
       clocksEl.innerHTML = "";
       const now = new Date();
@@ -118,7 +81,6 @@
         clocksEl.appendChild(d);
       }
     }
-
     renderClocks();
     setInterval(renderClocks, 1000);
 
@@ -131,7 +93,8 @@
       try {
         const r = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { cache: "no-store" });
         const j = await r.json();
-        document.getElementById("btc").textContent = n2(j.data.amount);
+        const amt = j?.data?.amount;
+        document.getElementById("btc").textContent = amt ? n2(amt) : "N/A";
       } catch {
         document.getElementById("btc").textContent = "N/A";
       }
@@ -142,8 +105,8 @@
       try {
         const r = await fetch("https://freegoldapi.com/data/latest.json", { cache: "no-store" });
         const j = await r.json();
-        const last = j[j.length - 1];
-        document.getElementById("gold").textContent = n2(last.price);
+        const last = j?.[j.length - 1];
+        document.getElementById("gold").textContent = (last && last.price) ? n2(last.price) : "N/A";
       } catch {
         document.getElementById("gold").textContent = "N/A";
       }
@@ -152,19 +115,44 @@
     // ================= BRENT (Twelve Data) =================
     const TWELVE_KEY = "e81416058762419bbe5115de5cc93eb5";
 
-    async function updateBrent() {
-      try {
-        const url = `https://api.twelvedata.com/price?symbol=BRENT&apikey=${TWELVE_KEY}`;
-        const r = await fetch(url, { cache: "no-store" });
-        const j = await r.json();
+    // Try in this order:
+    // 1) XBR/USD (Brent spot vs USD)
+    // 2) UKOIL (often used as Brent CFD-style symbol)
+    // 3) BRND (WisdomTree Brent ETF proxy)
+    const BRENT_SYMBOLS = ["XBR/USD", "UKOIL", "BRND"];
 
-        if (j.price) {
-          document.getElementById("brent").textContent = n2(j.price);
-        } else {
-          document.getElementById("brent").textContent = "N/A";
+    async function twelvePrice(symbol) {
+      const url = "https://api.twelvedata.com/price?symbol=" + encodeURIComponent(symbol) + "&apikey=" + TWELVE_KEY;
+      const r = await fetch(url, { cache: "no-store" });
+      const j = await r.json();
+      // Errors usually look like: { status:"error", message:"...", code:... }
+      if (j?.status === "error") throw new Error(`${symbol}: ${j.message || "error"}`);
+      if (!j?.price) throw new Error(`${symbol}: no price`);
+      const p = Number(j.price);
+      if (Number.isNaN(p)) throw new Error(`${symbol}: bad price`);
+      return p;
+    }
+
+    async function updateBrent() {
+      const out = document.getElementById("brent");
+      const sub = document.getElementById("brentSub");
+      out.textContent = "—";
+      sub.textContent = "USD / bbl (near-live)";
+
+      try {
+        for (const sym of BRENT_SYMBOLS) {
+          try {
+            const price = await twelvePrice(sym);
+            out.textContent = n2(price);
+            sub.textContent = `Symbol: ${sym} (Twelve Data)`;
+            return;
+          } catch (e) {
+            console.log("Brent attempt failed:", String(e));
+          }
         }
+        out.textContent = "N/A";
       } catch {
-        document.getElementById("brent").textContent = "N/A";
+        out.textContent = "N/A";
       }
     }
 
@@ -173,7 +161,8 @@
       try {
         const r = await fetch("https://api.frankfurter.dev/v1/latest?from=GBP&to=USD", { cache: "no-store" });
         const j = await r.json();
-        document.getElementById("fx").textContent = n4(j.rates.USD);
+        const rate = j?.rates?.USD;
+        document.getElementById("fx").textContent = rate ? n4(rate) : "N/A";
       } catch {
         document.getElementById("fx").textContent = "N/A";
       }
