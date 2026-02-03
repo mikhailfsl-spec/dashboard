@@ -67,7 +67,7 @@
 
     <div class="card">
       <div class="title">Brent</div>
-      <div class="subtitle">USD / bbl (daily)</div>
+      <div class="subtitle">USD / bbl (daily, last valid close)</div>
       <div class="value" id="brent">—</div>
     </div>
 
@@ -131,7 +131,8 @@
       try {
         const r = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { cache: "no-store" });
         const j = await r.json();
-        document.getElementById("btc").textContent = n2(j.data.amount);
+        const amt = j?.data?.amount;
+        document.getElementById("btc").textContent = amt ? n2(amt) : "N/A";
       } catch {
         document.getElementById("btc").textContent = "N/A";
       }
@@ -140,35 +141,49 @@
     // ---------- GOLD (daily) ----------
     async function updateGold() {
       try {
-        const r = await fetch("https://freegoldapi.com/data/latest.json");
+        const r = await fetch("https://freegoldapi.com/data/latest.json", { cache: "no-store" });
         const j = await r.json();
         const last = j[j.length - 1];
-        document.getElementById("gold").textContent = n2(last.price);
+        document.getElementById("gold").textContent = (last && last.price) ? n2(last.price) : "N/A";
       } catch {
         document.getElementById("gold").textContent = "N/A";
       }
     }
 
-    // ---------- BRENT (daily, CORS-safe) ----------
+    // ---------- BRENT (daily, CORS-safe + no NaN) ----------
     async function updateBrent() {
+      const out = document.getElementById("brent");
       try {
-        const url = "https://api.allorigins.win/raw?url=" +
-          encodeURIComponent("https://stooq.com/q/l/?s=cb.f&i=d");
-        const csv = await fetch(url).then(r => r.text());
+        const stooq = "https://stooq.com/q/l/?s=cb.f&i=d";
+        const url = "https://api.allorigins.win/raw?url=" + encodeURIComponent(stooq);
+
+        const csv = await fetch(url, { cache: "no-store" }).then(r => r.text());
         const lines = csv.trim().split("\n");
-        const last = lines[lines.length - 1].split(",");
-        document.getElementById("brent").textContent = n2(last[4]);
+        if (lines.length < 2) throw new Error("CSV empty");
+
+        // Walk backwards to find the last numeric close (skip N/A rows)
+        for (let i = lines.length - 1; i >= 1; i--) {
+          const cols = lines[i].split(",");
+          const close = cols[4];
+          if (close && close !== "N/A" && !Number.isNaN(Number(close))) {
+            out.textContent = n2(close);
+            return;
+          }
+        }
+
+        out.textContent = "N/A";
       } catch {
-        document.getElementById("brent").textContent = "N/A";
+        out.textContent = "N/A";
       }
     }
 
     // ---------- FX GBP → USD ----------
     async function updateFX() {
       try {
-        const r = await fetch("https://api.frankfurter.dev/v1/latest?from=GBP&to=USD");
+        const r = await fetch("https://api.frankfurter.dev/v1/latest?from=GBP&to=USD", { cache: "no-store" });
         const j = await r.json();
-        document.getElementById("fx").textContent = n4(j.rates.USD);
+        const rate = j?.rates?.USD;
+        document.getElementById("fx").textContent = rate ? n4(rate) : "N/A";
       } catch {
         document.getElementById("fx").textContent = "N/A";
       }
