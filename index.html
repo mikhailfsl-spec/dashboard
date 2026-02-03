@@ -67,7 +67,7 @@
 
     <div class="card">
       <div class="title">Brent</div>
-      <div class="subtitle">USD / bbl (daily, last valid close)</div>
+      <div class="subtitle">USD / bbl (near-live)</div>
       <div class="value" id="brent">—</div>
     </div>
 
@@ -82,7 +82,7 @@
   <div class="grid" id="clocks"></div>
 
   <script>
-    // ---------- CLOCKS ----------
+    // ================= CLOCKS =================
     const CITIES = [
       { name: "GMT", tz: "Etc/GMT" },
       { name: "London", tz: "Europe/London" },
@@ -122,74 +122,64 @@
     renderClocks();
     setInterval(renderClocks, 1000);
 
-    // ---------- HELPERS ----------
+    // ================= HELPERS =================
     const n2 = (x) => Number(x).toLocaleString("en-GB", { maximumFractionDigits: 2 });
     const n4 = (x) => Number(x).toLocaleString("en-GB", { maximumFractionDigits: 4 });
 
-    // ---------- BITCOIN ----------
+    // ================= BITCOIN =================
     async function updateBTC() {
       try {
         const r = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { cache: "no-store" });
         const j = await r.json();
-        const amt = j?.data?.amount;
-        document.getElementById("btc").textContent = amt ? n2(amt) : "N/A";
+        document.getElementById("btc").textContent = n2(j.data.amount);
       } catch {
         document.getElementById("btc").textContent = "N/A";
       }
     }
 
-    // ---------- GOLD (daily) ----------
+    // ================= GOLD (daily) =================
     async function updateGold() {
       try {
         const r = await fetch("https://freegoldapi.com/data/latest.json", { cache: "no-store" });
         const j = await r.json();
         const last = j[j.length - 1];
-        document.getElementById("gold").textContent = (last && last.price) ? n2(last.price) : "N/A";
+        document.getElementById("gold").textContent = n2(last.price);
       } catch {
         document.getElementById("gold").textContent = "N/A";
       }
     }
 
-    // ---------- BRENT (daily, CORS-safe + no NaN) ----------
+    // ================= BRENT (Twelve Data) =================
+    const TWELVE_KEY = "e81416058762419bbe5115de5cc93eb5";
+
     async function updateBrent() {
-      const out = document.getElementById("brent");
       try {
-        const stooq = "https://stooq.com/q/l/?s=cb.f&i=d";
-        const url = "https://api.allorigins.win/raw?url=" + encodeURIComponent(stooq);
+        const url = `https://api.twelvedata.com/price?symbol=BRENT&apikey=${TWELVE_KEY}`;
+        const r = await fetch(url, { cache: "no-store" });
+        const j = await r.json();
 
-        const csv = await fetch(url, { cache: "no-store" }).then(r => r.text());
-        const lines = csv.trim().split("\n");
-        if (lines.length < 2) throw new Error("CSV empty");
-
-        // Walk backwards to find the last numeric close (skip N/A rows)
-        for (let i = lines.length - 1; i >= 1; i--) {
-          const cols = lines[i].split(",");
-          const close = cols[4];
-          if (close && close !== "N/A" && !Number.isNaN(Number(close))) {
-            out.textContent = n2(close);
-            return;
-          }
+        if (j.price) {
+          document.getElementById("brent").textContent = n2(j.price);
+        } else {
+          document.getElementById("brent").textContent = "N/A";
         }
-
-        out.textContent = "N/A";
       } catch {
-        out.textContent = "N/A";
+        document.getElementById("brent").textContent = "N/A";
       }
     }
 
-    // ---------- FX GBP → USD ----------
+    // ================= FX GBP → USD =================
     async function updateFX() {
       try {
         const r = await fetch("https://api.frankfurter.dev/v1/latest?from=GBP&to=USD", { cache: "no-store" });
         const j = await r.json();
-        const rate = j?.rates?.USD;
-        document.getElementById("fx").textContent = rate ? n4(rate) : "N/A";
+        document.getElementById("fx").textContent = n4(j.rates.USD);
       } catch {
         document.getElementById("fx").textContent = "N/A";
       }
     }
 
-    // ---------- REFRESH ----------
+    // ================= REFRESH =================
     function refreshAll() {
       updateBTC();
       updateGold();
