@@ -1,198 +1,197 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>My Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8" />
+<title>My Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <style>
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #0d1117, #020409);
-      color: #fff;
-    }
+<style>
+:root{
+  --bg:#0b0f14;
+  --card:#111722;
+  --border:rgba(255,255,255,.08);
+  --text:#e6eaf0;
+  --muted:#9aa4b2;
+  --gold:#f5c542;
+}
 
-    h1 {
-      padding: 20px;
-      font-size: 22px;
-      font-weight: 600;
-    }
+*{box-sizing:border-box}
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-      padding: 20px;
-    }
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto;
+  background:radial-gradient(circle at top,#121826,#0b0f14);
+  color:var(--text);
+}
 
-    .card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 14px;
-      padding: 16px;
-      box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
-    }
+h1{
+  margin:20px;
+  font-size:22px;
+  font-weight:600;
+}
 
-    .label {
-      font-size: 12px;
-      opacity: 0.7;
-      margin-bottom: 6px;
-    }
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:16px;
+  padding:20px;
+}
 
-    .value {
-      font-size: 28px;
-      font-weight: 600;
-    }
+.card{
+  background:linear-gradient(180deg,#121826,#0d1320);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px;
+}
 
-    .unit {
-      font-size: 12px;
-      opacity: 0.6;
-      margin-left: 4px;
-    }
+.label{
+  font-size:12px;
+  color:var(--muted);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
 
-    .updated {
-      padding: 0 20px 20px;
-      font-size: 12px;
-      opacity: 0.5;
-    }
-  </style>
+.icon{
+  width:14px;
+  height:14px;
+  display:inline-block;
+}
+
+.gold-icon{
+  background:linear-gradient(135deg,#ffe27a,#f5c542,#c9971a);
+  border-radius:3px;
+  box-shadow:0 0 6px rgba(245,197,66,.4);
+}
+
+.value{
+  margin-top:8px;
+  font-size:32px;
+  font-weight:600;
+}
+
+.unit{
+  font-size:13px;
+  color:var(--muted);
+  margin-left:6px;
+}
+
+.updated{
+  padding:0 20px 20px;
+  font-size:12px;
+  color:var(--muted);
+}
+</style>
 </head>
 
 <body>
 
-  <h1>My Dashboard</h1>
+<h1>My Dashboard</h1>
 
-  <div class="grid">
+<div class="grid">
 
-    <div class="card">
-      <div class="label">BITCOIN</div>
-      <div class="value" id="btc">—</div>
-    </div>
-
-    <div class="card">
-      <div class="label">GOLD</div>
-      <div class="value">—</div>
-    </div>
-
-    <div class="card">
-      <div class="label">BRENT</div>
-      <div class="value">
-        <span id="brent">—</span>
-        <span class="unit">USD / bbl</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="label">FX</div>
-      <div class="value">—</div>
-    </div>
-
-    <div class="card">
-      <div class="label">GMT</div>
-      <div class="value" id="gmt">—</div>
-    </div>
-
-    <div class="card">
-      <div class="label">LONDON</div>
-      <div class="value" id="london">—</div>
-    </div>
-
-    <div class="card">
-      <div class="label">MOSCOW</div>
-      <div class="value" id="moscow">—</div>
-    </div>
-
-    <div class="card">
-      <div class="label">DUBAI</div>
-      <div class="value" id="dubai">—</div>
-    </div>
-
-    <div class="card">
-      <div class="label">SINGAPORE</div>
-      <div class="value" id="singapore">—</div>
-    </div>
-
-    <div class="card">
-      <div class="label">VLADIVOSTOK</div>
-      <div class="value" id="vladivostok">—</div>
-    </div>
-
+  <div class="card">
+    <div class="label">₿ Bitcoin</div>
+    <div class="value" id="btc">—</div>
   </div>
 
-  <div class="updated" id="updated">Updated.</div>
+  <div class="card">
+    <div class="label">
+      <span class="icon gold-icon"></span>
+      Gold
+    </div>
+    <div class="value" id="gold">—</div>
+  </div>
+
+  <div class="card">
+    <div class="label">🛢 Brent</div>
+    <div class="value">
+      <span id="brent">—</span>
+      <span class="unit">USD / bbl</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label">💱 FX</div>
+    <div class="value">—</div>
+  </div>
+
+  <div class="card">
+    <div class="label">🕒 GMT</div>
+    <div class="value" id="gmt">—</div>
+  </div>
+
+  <div class="card">
+    <div class="label">🇬🇧 London</div>
+    <div class="value" id="london">—</div>
+  </div>
+
+  <div class="card">
+    <div class="label">🇷🇺 Moscow</div>
+    <div class="value" id="moscow">—</div>
+  </div>
+
+  <div class="card">
+    <div class="label">🇦🇪 Dubai</div>
+    <div class="value" id="dubai">—</div>
+  </div>
+
+  <div class="card">
+    <div class="label">🇸🇬 Singapore</div>
+    <div class="value" id="singapore">—</div>
+  </div>
+
+  <div class="card">
+    <div class="label">🇷🇺 Vladivostok</div>
+    <div class="value" id="vladivostok">—</div>
+  </div>
+
+</div>
+
+<div class="updated" id="updated">Updated —</div>
 
 <script>
-/* ---------- HELPERS ---------- */
-
-function $(id){ return document.getElementById(id); }
-
-function time(tz){
-  return new Date().toLocaleTimeString("en-GB", {
-    timeZone: tz,
-    hour12: false
-  });
+async function json(url){
+  return fetch(url).then(r=>r.json())
 }
 
-/* ---------- CLOCKS ---------- */
+async function load(){
+  const btc = await json("https://api.coinbase.com/v2/prices/BTC-USD/spot");
+  document.getElementById("btc").textContent =
+    Number(btc.data.amount).toLocaleString();
 
-function updateClocks(){
-  $("gmt").textContent = time("Etc/GMT");
-  $("london").textContent = time("Europe/London");
-  $("moscow").textContent = time("Europe/Moscow");
-  $("dubai").textContent = time("Asia/Dubai");
-  $("singapore").textContent = time("Asia/Singapore");
-  $("vladivostok").textContent = time("Asia/Vladivostok");
-}
+  const brent = await json("/api/brent");
+  document.getElementById("brent").textContent =
+    brent.brent.toFixed(2);
 
-/* ---------- BRENT (Pages Function) ---------- */
+  const now = new Date();
+  const zones = {
+    gmt:"Etc/GMT",
+    london:"Europe/London",
+    moscow:"Europe/Moscow",
+    dubai:"Asia/Dubai",
+    singapore:"Asia/Singapore",
+    vladivostok:"Asia/Vladivostok"
+  };
 
-async function updateBrent(){
-  try {
-    const r = await fetch("/api/brent", { cache: "no-store" });
-    if (!r.ok) throw new Error("fetch failed");
-    const data = await r.json();
-
-    // expects { brent: number }
-    $("brent").textContent =
-      data.brent != null ? data.brent.toFixed(2) : "N/A";
-  } catch {
-    $("brent").textContent = "N/A";
+  for(const id in zones){
+    document.getElementById(id).textContent =
+      new Intl.DateTimeFormat("en-GB",{
+        timeZone:zones[id],
+        hour:"2-digit",
+        minute:"2-digit",
+        second:"2-digit"
+      }).format(now);
   }
+
+  document.getElementById("updated").textContent =
+    "Updated at " + now.toLocaleTimeString("en-GB");
 }
 
-/* ---------- BTC (Coinbase) ---------- */
-
-async function updateBTC(){
-  try {
-    const r = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot");
-    const data = await r.json();
-    $("btc").textContent =
-      Number(data.data.amount).toLocaleString("en-US", {
-        maximumFractionDigits: 1
-      });
-  } catch {
-    $("btc").textContent = "—";
-  }
-}
-
-/* ---------- REFRESH ---------- */
-
-async function refreshAll(){
-  updateClocks();
-  await Promise.allSettled([
-    updateBTC(),
-    updateBrent()
-  ]);
-  $("updated").textContent =
-    "Updated at " + new Date().toLocaleTimeString("en-GB");
-}
-
-/* ---------- START ---------- */
-
-refreshAll();
-setInterval(updateClocks, 1000);
-setInterval(refreshAll, 60_000);
+load();
+setInterval(load,10000);
 </script>
 
 </body>
