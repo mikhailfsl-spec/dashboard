@@ -30,12 +30,12 @@
       border-radius: 14px;
       padding: 14px;
     }
-    .city {
+    .title {
       font-size: 12px;
       color: #94a3b8;
       text-transform: uppercase;
     }
-    .tz {
+    .subtitle {
       font-size: 11px;
       color: #64748b;
     }
@@ -43,6 +43,7 @@
       font-size: 28px;
       font-weight: 700;
       margin-top: 8px;
+      white-space: nowrap;
     }
   </style>
 </head>
@@ -50,17 +51,35 @@
 <body>
   <header>My Dashboard</header>
 
-  <!-- CLOCKS -->
-  <div class="grid" id="clocks"></div>
-
-  <!-- BITCOIN -->
+  <!-- PRICES -->
   <div class="grid">
     <div class="card">
-      <div class="city">Bitcoin</div>
-      <div class="tz">BTC / USD (Coinbase)</div>
-      <div class="value" id="btc">Loading…</div>
+      <div class="title">Bitcoin</div>
+      <div class="subtitle">BTC / USD (Coinbase)</div>
+      <div class="value" id="btc">—</div>
+    </div>
+
+    <div class="card">
+      <div class="title">Gold</div>
+      <div class="subtitle">USD / oz (daily)</div>
+      <div class="value" id="gold">—</div>
+    </div>
+
+    <div class="card">
+      <div class="title">Brent</div>
+      <div class="subtitle">USD / bbl (daily)</div>
+      <div class="value" id="brent">—</div>
+    </div>
+
+    <div class="card">
+      <div class="title">FX</div>
+      <div class="subtitle">GBP → USD</div>
+      <div class="value" id="fx">—</div>
     </div>
   </div>
+
+  <!-- CLOCKS -->
+  <div class="grid" id="clocks"></div>
 
   <script>
     // ---------- CLOCKS ----------
@@ -89,39 +108,82 @@
       clocksEl.innerHTML = "";
       const now = new Date();
       for (const c of CITIES) {
-        const div = document.createElement("div");
-        div.className = "card";
-        div.innerHTML = `
-          <div class="city">${c.name}</div>
-          <div class="tz">${c.tz}</div>
+        const d = document.createElement("div");
+        d.className = "card";
+        d.innerHTML = `
+          <div class="title">${c.name}</div>
+          <div class="subtitle">${c.tz}</div>
           <div class="value">${timeFmt(c.tz).format(now)}</div>
         `;
-        clocksEl.appendChild(div);
+        clocksEl.appendChild(d);
       }
     }
 
     renderClocks();
     setInterval(renderClocks, 1000);
 
+    // ---------- HELPERS ----------
+    const n2 = (x) => Number(x).toLocaleString("en-GB", { maximumFractionDigits: 2 });
+    const n4 = (x) => Number(x).toLocaleString("en-GB", { maximumFractionDigits: 4 });
+
     // ---------- BITCOIN ----------
     async function updateBTC() {
-      const el = document.getElementById("btc");
       try {
-        const r = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", {
-          cache: "no-store"
-        });
+        const r = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { cache: "no-store" });
         const j = await r.json();
-        const price = Number(j.data.amount);
-        el.textContent = price.toLocaleString("en-GB", {
-          maximumFractionDigits: 2
-        });
-      } catch (e) {
-        el.textContent = "N/A";
+        document.getElementById("btc").textContent = n2(j.data.amount);
+      } catch {
+        document.getElementById("btc").textContent = "N/A";
       }
     }
 
-    updateBTC();
-    setInterval(updateBTC, 60 * 1000);
+    // ---------- GOLD (daily) ----------
+    async function updateGold() {
+      try {
+        const r = await fetch("https://freegoldapi.com/data/latest.json");
+        const j = await r.json();
+        const last = j[j.length - 1];
+        document.getElementById("gold").textContent = n2(last.price);
+      } catch {
+        document.getElementById("gold").textContent = "N/A";
+      }
+    }
+
+    // ---------- BRENT (daily, CORS-safe) ----------
+    async function updateBrent() {
+      try {
+        const url = "https://api.allorigins.win/raw?url=" +
+          encodeURIComponent("https://stooq.com/q/l/?s=cb.f&i=d");
+        const csv = await fetch(url).then(r => r.text());
+        const lines = csv.trim().split("\n");
+        const last = lines[lines.length - 1].split(",");
+        document.getElementById("brent").textContent = n2(last[4]);
+      } catch {
+        document.getElementById("brent").textContent = "N/A";
+      }
+    }
+
+    // ---------- FX GBP → USD ----------
+    async function updateFX() {
+      try {
+        const r = await fetch("https://api.frankfurter.dev/v1/latest?from=GBP&to=USD");
+        const j = await r.json();
+        document.getElementById("fx").textContent = n4(j.rates.USD);
+      } catch {
+        document.getElementById("fx").textContent = "N/A";
+      }
+    }
+
+    // ---------- REFRESH ----------
+    function refreshAll() {
+      updateBTC();
+      updateGold();
+      updateBrent();
+      updateFX();
+    }
+
+    refreshAll();
+    setInterval(refreshAll, 60 * 1000);
   </script>
 </body>
 </html>
