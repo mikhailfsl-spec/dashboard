@@ -1,195 +1,55 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>My Dashboard</title>
+export default {
+  async fetch(request, env) {
+    const cors = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET,OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Content-Type": "application/json",
+    };
 
-  <style>
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background: #0b0f17;
-      color: #e5e7eb;
+    // CORS preflight
+    if (request.method === "OPTIONS") return new Response(null, { headers: cors });
+
+    try {
+      const key = env.METALPRICE_API_KEY;
+      if (!key) {
+        return new Response(JSON.stringify({ error: "Missing METALPRICE_API_KEY" }), { status: 500, headers: cors });
+      }
+
+      const url =
+        "https://api.metalpriceapi.com/v1/latest" +
+        `?api_key=${encodeURIComponent(key)}` +
+        "&base=USD" +
+        "&currencies=BRENT";
+
+      // Cache a little to reduce calls
+      const upstream = await fetch(url, { cf: { cacheTtl: 300, cacheEverything: true } });
+      const data = await upstream.json();
+
+      const brent = data?.rates?.BRENT ?? null;
+
+      if (!brent) {
+        return new Response(
+          JSON.stringify({
+            brent: null,
+            error: "BRENT not available from upstream",
+            note: "MetalpriceAPI free plan is 24h delayed",
+          }),
+          { status: 503, headers: cors }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          brent,
+          unit: "USD/bbl",
+          delayed: "24h",
+          source: "MetalpriceAPI",
+        }),
+        { headers: cors }
+      );
+    } catch (err) {
+      return new Response(JSON.stringify({ error: "Upstream error", details: String(err) }), { status: 500, headers: cors });
     }
-    header {
-      padding: 16px;
-      font-size: 18px;
-      font-weight: 600;
-      border-bottom: 1px solid #1f2937;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-      padding: 16px;
-    }
-    .card {
-      background: #111827;
-      border: 1px solid #1f2937;
-      border-radius: 14px;
-      padding: 14px;
-    }
-    .title {
-      font-size: 12px;
-      color: #94a3b8;
-      text-transform: uppercase;
-    }
-    .subtitle {
-      font-size: 11px;
-      color: #64748b;
-    }
-    .value {
-      font-size: 28px;
-      font-weight: 700;
-      margin-top: 8px;
-      white-space: nowrap;
-    }
-  </style>
-</head>
-
-<body>
-<header>My Dashboard</header>
-
-<!-- PRICES -->
-<div class="grid">
-  <div class="card">
-    <div class="title">Bitcoin</div>
-    <div class="subtitle">BTC / USD (Coinbase)</div>
-    <div class="value" id="btc">—</div>
-  </div>
-
-  <div class="card">
-    <div class="title">Gold</div>
-    <div class="subtitle">USD / oz (daily)</div>
-    <div class="value" id="gold">—</div>
-  </div>
-
-  <div class="card">
-    <div class="title">Brent</div>
-    <div class="subtitle">USD / bbl (24h delayed, MetalpriceAPI)</div>
-    <div class="value" id="brent">—</div>
-  </div>
-
-  <div class="card">
-    <div class="title">FX</div>
-    <div class="subtitle">GBP → USD</div>
-    <div class="value" id="fx">—</div>
-  </div>
-</div>
-
-<!-- CLOCKS -->
-<div class="grid" id="clocks"></div>
-
-<script>
-/* ================= CLOCKS ================= */
-const CITIES = [
-  { name: "GMT", tz: "Etc/GMT" },
-  { name: "London", tz: "Europe/London" },
-  { name: "Moscow", tz: "Europe/Moscow" },
-  { name: "Dubai", tz: "Asia/Dubai" },
-  { name: "Singapore", tz: "Asia/Singapore" },
-  { name: "Vladivostok", tz: "Asia/Vladivostok" }
-];
-
-function timeFmt(tz) {
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: tz,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false
-  });
-}
-
-const clocksEl = document.getElementById("clocks");
-function renderClocks() {
-  clocksEl.innerHTML = "";
-  const now = new Date();
-  for (const c of CITIES) {
-    clocksEl.innerHTML += `
-      <div class="card">
-        <div class="title">${c.name}</div>
-        <div class="subtitle">${c.tz}</div>
-        <div class="value">${timeFmt(c.tz).format(now)}</div>
-      </div>`;
-  }
-}
-renderClocks();
-setInterval(renderClocks, 1000);
-
-/* ================= HELPERS ================= */
-const n2 = x => Number(x).toLocaleString("en-GB", { maximumFractionDigits: 2 });
-const n4 = x => Number(x).toLocaleString("en-GB", { maximumFractionDigits: 4 });
-
-/* ================= BITCOIN ================= */
-async function updateBTC() {
-  try {
-    const r = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { cache: "no-store" });
-    const j = await r.json();
-    document.getElementById("btc").textContent =
-      j?.data?.amount ? n2(j.data.amount) : "N/A";
-  } catch {
-    document.getElementById("btc").textContent = "N/A";
-  }
-}
-
-/* ================= GOLD ================= */
-async function updateGold() {
-  try {
-    const r = await fetch("https://freegoldapi.com/data/latest.json", { cache: "no-store" });
-    const j = await r.json();
-    const last = j?.[j.length - 1];
-    document.getElementById("gold").textContent =
-      last?.price ? n2(last.price) : "N/A";
-  } catch {
-    document.getElementById("gold").textContent = "N/A";
-  }
-}
-
-/* ================= BRENT (MetalpriceAPI ONLY) ================= */
-const METALPRICE_KEY = "b4352d0bd6bdfbc206ef73ab684b8e92";
-
-async function updateBrent() {
-  const out = document.getElementById("brent");
-
-  try {
-    const url = `https://api.metalpriceapi.com/v1/latest?api_key=${METALPRICE_KEY}&base=USD&currencies=BRENT`;
-    const r = await fetch(url, { cache: "no-store" });
-    const j = await r.json();
-
-    if (j?.rates?.BRENT) {
-      out.textContent = n2(j.rates.BRENT);
-    } else {
-      out.textContent = "N/A";
-    }
-  } catch {
-    out.textContent = "N/A";
-  }
-}
-
-/* ================= FX ================= */
-async function updateFX() {
-  try {
-    const r = await fetch("https://api.frankfurter.dev/v1/latest?from=GBP&to=USD", { cache: "no-store" });
-    const j = await r.json();
-    document.getElementById("fx").textContent =
-      j?.rates?.USD ? n4(j.rates.USD) : "N/A";
-  } catch {
-    document.getElementById("fx").textContent = "N/A";
-  }
-}
-
-/* ================= REFRESH ================= */
-function refreshAll() {
-  updateBTC();
-  updateGold();
-  updateBrent();
-  updateFX();
-}
-
-refreshAll();
-setInterval(refreshAll, 60_000);
-</script>
-</body>
-</html>
+  },
+};
