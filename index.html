@@ -1,8 +1,95 @@
 <!doctype html>
-<html>
-  <head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Dashboard</title></head>
-  <body style="font-family:system-ui;padding:20px">
-    <h1>My Dashboard</h1>
-    <p>If you can see this, it’s working.</p>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: #0b0f17;
+      color: #e5e7eb;
+    }
+    header {
+      padding: 16px;
+      font-size: 18px;
+      font-weight: 600;
+      border-bottom: 1px solid #1f2937;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      padding: 16px;
+    }
+    .card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .city {
+      font-size: 12px;
+      color: #94a3b8;
+      text-transform: uppercase;
+    }
+    .tz {
+      font-size: 11px;
+      color: #64748b;
+    }
+    .time {
+      font-size: 28px;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>My Dashboard</header>
+  <div class="grid" id="clocks"></div>
+
+  <script>
+    const CITIES = [
+      { name: "GMT", tz: "Etc/GMT" },
+      { name: "London", tz: "Europe/London" },
+      { name: "Moscow", tz: "Europe/Moscow" },
+      { name: "Dubai", tz: "Asia/Dubai" },
+      { name: "Singapore", tz: "Asia/Singapore" },
+      { name: "Vladivostok", tz: "Asia/Vladivostok" }
+    ];
+
+    function fmt(tz) {
+      return new Intl.DateTimeFormat("en-GB", {
+        timeZone: tz,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      });
+    }
+
+    const el = document.getElementById("clocks");
+
+    function render() {
+      el.innerHTML = "";
+      const now = new Date();
+      for (const c of CITIES) {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="city">${c.name}</div>
+          <div class="tz">${c.tz}</div>
+          <div class="time">${fmt(c.tz).format(now)}</div>
+        `;
+        el.appendChild(card);
+      }
+    }
+
+    render();
+    setInterval(render, 1000);
+  </script>
+</body>
 </html>
