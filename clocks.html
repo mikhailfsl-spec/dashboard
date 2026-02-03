@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Markets & Global Time</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#0b0f17;
+      --card:#111827;
+      --border:#1f2937;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --ok:#10b981;
+      --bad:#f87171;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:var(--bg);
+      color:var(--text);
+    }
+    header{
+      padding:16px 20px;
+      border-bottom:1px solid var(--border);
+      font-size:18px;
+      font-weight:600;
+    }
+    main{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:16px;
+      padding:16px;
+      align-items:start;
+    }
+    @media (max-width: 900px){
+      main{ grid-template-columns:1fr; }
+      .prices-col{ order:1; }
+      .clocks-col{ order:2; }
+    }
+    .column{ display:grid; gap:16px; }
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px;
+    }
+    .row{ display:flex; justify-content:space-between; gap:10px; align-items:baseline; }
+    .label{
+      font-size:12px;
+      color:var(--muted);
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    .small{ font-size:12px; color:var(--muted); }
+    .value{
+      font-size:28px;
+      font-weight:750;
+      line-height:1.1;
+      white-space:nowrap;
+    }
+    .subvalue{ font-size:12px; color:var(--muted); margin-top:6px; }
+    .status{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .dot{
+      width:8px; height:8px; border-radius:999px;
+      background:var(--muted);
+      display:inline-block;
+    }
+    .dot.ok{ background:var(--ok); }
+    .dot.bad{ background:var(--bad); }
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.35;
+    }
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+  </style>
+</head>
+
+<body>
+  <header>Markets & Global Time</header>
+
+  <main>
+    <!-- PRICES (first on mobile) -->
+    <div class="column prices-col">
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="label">Gold</div>
+            <div class="small">USD / oz</div>
+          </div>
+          <div class="value" id="goldVal">—</div>
+        </div>
+        <div class="subvalue" id="goldMeta">Updating…</div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="label">Brent</div>
+            <div class="small">USD / bbl</div>
+          </div>
+          <div class="value" id="brentVal">—</div>
+        </div>
+        <div class="subvalue" id="brentMeta">Updating…</div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="label">Bitcoin</div>
+            <div class="small">BTC / USD spot</div>
+          </div>
+          <div class="value" id="btcVal">—</div>
+        </div>
+        <div class="subvalue" id="btcMeta">Updating…</div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="label">FX</div>
+            <div class="small">GBP → USD</div>
+          </div>
+          <div class="value" id="fxVal">—</div>
+        </div>
+        <div class="subvalue" id="fxMeta">Updating…</div>
+      </div>
+
+      <div class="card">
+        <div class="status" id="statusLine">
+          <span class="dot" id="statusDot"></span>
+          <span id="statusText">Idle</span>
+        </div>
+        <div class="hint" style="margin-top:10px">
+          Sources:
+          <span class="mono">FreeGoldAPI</span> (daily),
+          <span class="mono">Stooq CB.F</span> (daily, via proxy if needed),
+          <span class="mono">Coinbase</span> spot,
+          <span class="mono">Frankfurter</span>.
+          <br/>If a tile shows “N/A”, it’s usually a temporary fetch/CORS issue.
+        </div>
+      </div>
+    </div>
+
+    <!-- CLOCKS -->
+    <div class="column clocks-col" id="clocks"></div>
+  </main>
+
+  <script>
+    // ========== CLOCKS ==========
+    const CITIES = [
+      { name:"GMT",         tz:"Etc/GMT" },
+      { name:"London",      tz:"Europe/London" },
+      { name:"Moscow",      tz:"Europe/Moscow" },
+      { name:"Dubai",       tz:"Asia/Dubai" },
+      { name:"Singapore",   tz:"Asia/Singapore" },
+      { name:"Vladivostok", tz:"Asia/Vladivostok" }
+    ];
+
+    const clocksEl = document.getElementById("clocks");
+
+    function fmtTime(tz){
+      return new Intl.DateTimeFormat("en-GB", {
+        timeZone: tz,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      });
+    }
+
+    function renderClocks(){
+      clocksEl.innerHTML = "";
+      const now = new Date();
+      for (const c of CITIES){
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="row">
+            <div>
+              <div class="label">${c.name}</div>
+              <div class="small">${c.tz}</div>
+            </div>
+            <div class="value">${fmtTime(c.tz).format(now)}</div>
+          </div>
+        `;
+        clocksEl.appendChild(card);
+      }
+    }
+    renderClocks();
+    setInterval(renderClocks, 1000);
+
+    // ========== HELPERS ==========
+    const $ = (id) => document.getElementById(id);
+
+    function setStatus(ok, text){
+      $("statusDot").className = "dot " + (ok ? "ok" : "bad");
+      $("statusText").textContent = text;
+    }
+
+    function n2(x){ return Number(x).toLocaleString("en-GB", { maximumFractionDigits: 2 }); }
+    function n4(x){ return Number(x).toLocaleString("en-GB", { maximumFractionDigits: 4 }); }
+
+    async function safeJson(url){
+      const r = await fetch(url, { cache: "no-store" });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return await r.json();
+    }
+    async function safeText(url){
+      const r = await fetch(url, { cache: "no-store" });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return await r.text();
+    }
+
+    // ========== DATA FETCHERS ==========
+    // Gold: FreeGoldAPI latest.json (daily) — take last entry
+    async function updateGold(){
+      const url = "https://freegoldapi.com/data/latest.json";
+      const data = await safeJson(url);
+      const last = data[data.length - 1];
+      $("goldVal").textContent = n2(last.price);
+      $("goldMeta").textContent = `As of ${last.date} (daily)`;
+    }
+
+    // Brent: Stooq daily CSV for CB.F (often blocked by CORS)
+    // Strategy: try direct first; if it fails, use AllOrigins RAW proxy.
+    async function updateBrent(){
+      const direct = "https://stooq.com/q/l/?s=cb.f&i=d";
+
+      function parseStooqDaily(csv){
+        const lines = csv.trim().split("\n").filter(Boolean);
+        if (lines.length < 2) throw new Error("CSV empty");
+        const last = lines[lines.length - 1].split(",");
+        const date = last[0];
+        const close = last[4];
+        if (!close || close === "N/A") throw new Error("No close");
+        return { date, close: Number(close) };
+      }
+
+      // 1) Try direct
+      try{
+        const csv = await safeText(direct);
+        const { date, close } = parseStooqDaily(csv);
+        $("brentVal").textContent = n2(close);
+        $("brentMeta").textContent = `CB.F close on ${date} (daily)`;
+        return;
+      } catch (e){
+        // fall back to proxy
+      }
+
+      // 2) Fallback via CORS proxy (AllOrigins)
+      const proxied = "https://api.allorigins.win/raw?url=" + encodeURIComponent(direct);
+      const csv2 = await safeText(proxied);
+      const { date, close } = parseStooqDaily(csv2);
+
+      $("brentVal").textContent = n2(close);
+      $("brentMeta").textContent = `CB.F close on ${date} (daily) • via proxy`;
+    }
+
+    // Bitcoin: Coinbase spot (no auth)
+    async function updateBTC(){
+      const url = "https://api.coinbase.com/v2/prices/BTC-USD/spot";
+      const j = await safeJson(url);
+      const amt = j?.data?.amount;
+      if (!amt) throw new Error("No amount");
+      $("btcVal").textContent = n2(amt);
+      $("btcMeta").textContent = `Coinbase spot • ${new Date().toLocaleString("en-GB")}`;
+    }
+
+    // FX: Frankfurter GBP->USD
+    async function updateFX(){
+      const url = "https://api.frankfurter.dev/v1/latest?from=GBP&to=USD";
+      const j = await safeJson(url);
+      const rate = j?.rates?.USD;
+      if (!rate) throw new Error("No rate");
+      $("fxVal").textContent = n4(rate);
+      $("fxMeta").textContent = `ECB reference via Frankfurter • ${j.date}`;
+    }
+
+    async function refreshAll(){
+      setStatus(true, "Updating…");
+
+      const tasks = [
+        updateGold().catch(e => { $("goldVal").textContent = "N/A"; $("goldMeta").textContent = `Error: ${e.message}`; }),
+        updateBrent().catch(e => { $("brentVal").textContent = "N/A"; $("brentMeta").textContent = `Error: ${e.message}`; }),
+        updateBTC().catch(e => { $("btcVal").textContent = "N/A"; $("btcMeta").textContent = `Error: ${e.message}`; }),
+        updateFX().catch(e => { $("fxVal").textContent = "N/A"; $("fxMeta").textContent = `Error: ${e.message}`; })
+      ];
+
+      await Promise.all(tasks);
+
+      const anyNA = ["goldVal","brentVal","btcVal","fxVal"].some(id => $(id).textContent === "N/A");
+      setStatus(!anyNA, anyNA ? "Updated (some sources failed)" : "Updated");
+    }
+
+    // First load, then refresh every 60 seconds
+    refreshAll();
+    setInterval(refreshAll, 60 * 1000);
+  </script>
+</body>
+</html>
