@@ -35,7 +35,7 @@
 
     <div class="card">
       <div class="title">Brent</div>
-      <div class="subtitle" id="brentSub">Brent futures (BZ=F) via Finnhub</div>
+      <div class="subtitle" id="brentSub">BNO (Brent ETF proxy, ~delayed)</div>
       <div class="value" id="brent">—</div>
     </div>
 
@@ -71,6 +71,7 @@
     }
 
     const clocksEl = document.getElementById("clocks");
+
     function renderClocks() {
       clocksEl.innerHTML = "";
       const now = new Date();
@@ -85,6 +86,7 @@
         clocksEl.appendChild(d);
       }
     }
+
     renderClocks();
     setInterval(renderClocks, 1000);
 
@@ -92,7 +94,7 @@
     const n2 = (x) => Number(x).toLocaleString("en-GB", { maximumFractionDigits: 2 });
     const n4 = (x) => Number(x).toLocaleString("en-GB", { maximumFractionDigits: 4 });
 
-    // ================= BITCOIN =================
+    // ================= BITCOIN (UNCHANGED) =================
     async function updateBTC() {
       try {
         const r = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { cache: "no-store" });
@@ -104,7 +106,7 @@
       }
     }
 
-    // ================= GOLD (daily) =================
+    // ================= GOLD (UNCHANGED) =================
     async function updateGold() {
       try {
         const r = await fetch("https://freegoldapi.com/data/latest.json", { cache: "no-store" });
@@ -116,13 +118,14 @@
       }
     }
 
-    // ================= BRENT (Finnhub) =================
+    // ================= BRENT (CHANGED: ETF proxy via Finnhub) =================
     const FINNHUB_KEY = "d6102i9r01qjrrugfd3gd6102i9r01qjrrugfd40";
-    const BRENT_SYMBOL = "BZ=F"; // Brent futures (Yahoo-style); Finnhub supports this in quote for many accounts
+    const BRENT_SYMBOL = "BNO"; // United States Brent Oil Fund ETF (proxy for Brent)
 
     async function updateBrent() {
       const out = document.getElementById("brent");
       const sub = document.getElementById("brentSub");
+
       try {
         const url = "https://finnhub.io/api/v1/quote?symbol=" + encodeURIComponent(BRENT_SYMBOL) + "&token=" + FINNHUB_KEY;
         const r = await fetch(url, { cache: "no-store" });
@@ -131,18 +134,20 @@
 
         // Finnhub quote: { c: current, d: change, dp: percent, h, l, o, pc, t }
         const price = j?.c;
-        if (price && price > 0) {
+        if (typeof price === "number" && price > 0) {
           out.textContent = n2(price);
-          sub.textContent = `Brent futures ${BRENT_SYMBOL} • Finnhub`;
+          if (sub) sub.textContent = "BNO (Brent ETF proxy, ~delayed)";
         } else {
           out.textContent = "N/A";
+          if (sub) sub.textContent = "BNO (no quote returned)";
         }
       } catch {
         out.textContent = "N/A";
+        if (sub) sub.textContent = "BNO (fetch failed)";
       }
     }
 
-    // ================= FX GBP → USD =================
+    // ================= FX (UNCHANGED) =================
     async function updateFX() {
       try {
         const r = await fetch("https://api.frankfurter.dev/v1/latest?from=GBP&to=USD", { cache: "no-store" });
