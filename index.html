@@ -50,6 +50,13 @@
 <body>
   <header>My Dashboard</header>
   <div class="grid" id="clocks"></div>
+<div class="grid">
+  <div class="card">
+    <div class="city">Bitcoin</div>
+    <div class="tz">BTC / USD (Coinbase spot)</div>
+    <div class="time" id="btc">—</div>
+  </div>
+</div>
 
   <script>
     const CITIES = [
@@ -91,5 +98,18 @@
     render();
     setInterval(render, 1000);
   </script>
+  <script>
+  async function updateBTC() {
+    const r = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { cache: "no-store" });
+    const j = await r.json();
+    const price = Number(j.data.amount);
+    document.getElementById("btc").textContent =
+      price.toLocaleString("en-GB", { maximumFractionDigits: 2 });
+  }
+
+  updateBTC();
+  setInterval(updateBTC, 60 * 1000);
+</script>
+
 </body>
 </html>
